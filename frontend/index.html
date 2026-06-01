@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrowdfundingFactory — Panel de Control</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d2e;
+      --border:   #2d3154;
+      --accent:   #6C5CE7;
+      --green:    #00B894;
+      --yellow:   #FDCB6E;
+      --danger:   #E17055;
+      --text:     #e0e0f0;
+      --muted:    #8888aa;
+      --radius:   12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    .page { max-width: 1000px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 2rem; }
+    header h1 { font-size: 2rem; color: #fff; }
+    header h1 span { color: var(--accent); }
+    header p { color: var(--muted); margin-top: .4rem; font-size: .9rem; }
+
+    .connect-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.6rem;
+      flex-wrap: wrap;
+      gap: .8rem;
+    }
+    .status { font-size: .85rem; color: var(--muted); }
+    .status span { color: var(--green); font-weight: 600; }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .55rem 1.2rem;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: opacity .2s;
+      font-weight: 500;
+    }
+    button:hover { opacity: .85; }
+    button:disabled { opacity: .4; cursor: default; }
+    button.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-weight: 400; }
+    button.danger    { background: var(--danger); }
+    button.green     { background: var(--green); }
+    button.yellow    { background: var(--yellow); color: #333; }
+    button.sm        { padding: .35rem .8rem; font-size: .8rem; margin: 0; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem;
+      margin-bottom: 1rem;
+    }
+    .card h3 {
+      font-size: 1rem;
+      color: var(--accent);
+      margin-bottom: .3rem;
+    }
+    .card .hint { font-size: .78rem; color: var(--muted); margin-bottom: 1rem; }
+    .card label { display: block; font-size: .82rem; color: var(--muted); margin-bottom: .3rem; margin-top: .8rem; }
+    .card input, .card textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .5rem .8rem;
+      color: var(--text);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+      resize: vertical;
+    }
+    .card input:focus, .card textarea:focus { border-color: var(--accent); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* Campaign cards */
+    .campaigns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.6rem;
+    }
+    .campaign-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      transition: border-color .2s;
+    }
+    .campaign-card:hover { border-color: var(--accent); }
+    .campaign-card .c-title { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: .3rem; }
+    .campaign-card .c-desc  { font-size: .8rem; color: var(--muted); margin-bottom: .8rem; line-height: 1.5; }
+    .campaign-card .c-addr  { font-size: .7rem; color: var(--muted); word-break: break-all; margin-bottom: .6rem; }
+
+    .progress-bar {
+      background: var(--bg);
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+      margin: .5rem 0;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: var(--green);
+      transition: width .5s;
+    }
+    .progress-fill.danger { background: var(--danger); }
+    .progress-fill.yellow { background: var(--yellow); }
+
+    .c-stats {
+      display: flex;
+      gap: 1rem;
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: .8rem;
+      flex-wrap: wrap;
+    }
+    .c-stats strong { color: var(--text); }
+
+    .estado-badge {
+      display: inline-block;
+      border-radius: 20px;
+      padding: .15rem .6rem;
+      font-size: .72rem;
+      font-weight: 600;
+    }
+    .estado-Activa   { background: rgba(0,184,148,.15); border: 1px solid var(--green);  color: var(--green); }
+    .estado-Exitosa  { background: rgba(108,92,231,.15); border: 1px solid var(--accent); color: var(--accent); }
+    .estado-Fallida  { background: rgba(225,112,85,.15); border: 1px solid var(--danger); color: var(--danger); }
+    .estado-Reclamada { background: rgba(253,203,110,.15); border: 1px solid var(--yellow); color: var(--yellow); }
+
+    /* Selected campaign panel */
+    #selectedPanel {
+      display: none;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1.4rem;
+      margin-bottom: 1rem;
+    }
+    #selectedPanel h3 { color: var(--accent); font-size: 1.1rem; margin-bottom: .5rem; }
+    #selectedPanel .meta { font-size: .82rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.8; }
+
+    .section-title {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      margin: 1.6rem 0 .6rem;
+    }
+
+    .log {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .8rem;
+      margin-top: 1.6rem;
+      font-size: .8rem;
+      color: var(--muted);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .log p { border-bottom: 1px solid #1e2030; padding: .3rem 0; }
+    .log p.ok   { color: var(--green); }
+    .log p.err  { color: var(--danger); }
+    .log p.info { color: var(--accent); }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: .78rem;
+      margin-top: 2.5rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>🏗️ <span>CrowdfundingFactory</span></h1>
+    <p>Curso de Introducción a Blockchain · Proyecto 6 (Capstone) · Frontend de demostración</p>
+  </header>
+
+  <!-- CONNECT BAR -->
+  <div class="connect-bar">
+    <div class="status">Wallet: <span id="walletAddr">No conectada</span></div>
+    <button onclick="conectarWallet()">🦊 Conectar MetaMask</button>
+  </div>
+
+  <!-- FACTORY ADDRESS -->
+  <div class="card">
+    <h3>🏭 Dirección del Factory</h3>
+    <p class="hint">Pega la dirección del contrato CrowdfundingFactory desplegado en Remix o Sepolia.</p>
+    <label>Dirección de CrowdfundingFactory</label>
+    <input type="text" id="factoryAddr" placeholder="0x..." />
+    <button onclick="cargarFactory()" style="margin-top:.8rem;">Cargar Factory</button>
+  </div>
+
+  <!-- CREATE CAMPAIGN -->
+  <div class="card">
+    <h3>🚀 Crear Nueva Campaña</h3>
+    <p class="hint">Despliega un nuevo contrato Campaign a través del factory. Cualquiera puede crear una campaña.</p>
+    <div class="grid-2">
+      <div>
+        <label>Título de la campaña</label>
+        <input type="text" id="newTitulo" placeholder="Mi Proyecto Increíble" maxlength="100" />
+        <label>Descripción</label>
+        <textarea id="newDesc" placeholder="Descripción del proyecto y en qué se usarán los fondos." rows="3"></textarea>
+      </div>
+      <div>
+        <label>Meta de recaudación (en ETH)</label>
+        <input type="number" id="newMeta" placeholder="1.0" min="0.001" step="0.001" />
+        <label>Duración (días, 1–365)</label>
+        <input type="number" id="newDias" placeholder="30" min="1" max="365" />
+        <button class="green" onclick="crearCampana()" style="margin-top:1rem;width:100%;">Crear Campaña</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMPAIGNS LIST -->
+  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+    <span>Campañas Activas</span>
+    <button class="secondary sm" onclick="cargarCampanas()">🔄 Actualizar</button>
+  </div>
+  <div class="campaigns-grid" id="campaignsGrid">
+    <p style="color:var(--muted);font-size:.85rem;padding:1rem;grid-column:1/-1;">Carga el factory para ver las campañas.</p>
+  </div>
+
+  <!-- SELECTED CAMPAIGN PANEL -->
+  <div id="selectedPanel">
+    <h3 id="selTitle">—</h3>
+    <div class="meta" id="selMeta"></div>
+    <div class="grid-2">
+
+      <!-- CONTRIBUTE -->
+      <div>
+        <h4 style="color:var(--green);font-size:.9rem;margin-bottom:.5rem;">💰 Contribuir</h4>
+        <input type="number" id="contribAmt" placeholder="0.05 ETH" step="0.001" min="0.001"
+               style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;color:var(--text);font-size:.9rem;outline:none;width:100%;" />
+        <button class="green" onclick="contribuir()" style="margin-top:.6rem;width:100%;">Contribuir ETH</button>
+        <div id="miContrib" style="font-size:.8rem;color:var(--muted);margin-top:.4rem;"></div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div>
+        <h4 style="color:var(--accent);font-size:.9rem;margin-bottom:.5rem;">⚡ Acciones</h4>
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <button class="yellow" onclick="reclamarFondos()">📥 Reclamar Fondos (creador)</button>
+          <button class="secondary" onclick="reembolsar()">↩️ Solicitar Reembolso</button>
+          <button class="secondary" onclick="actualizarSeleccionada()">🔄 Actualizar Estado</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="section-title">Registro de Actividad</div>
+  <div class="log" id="logBox">
+    <p class="info">Conecta tu wallet y carga el factory para comenzar.</p>
+  </div>
+
+  <footer>
+    <p>Curso Introducción a Blockchain · Proyecto 6: CrowdfundingFactory (Capstone) ·
+       <a href="https://sepolia.etherscan.io" target="_blank">sepolia.etherscan.io</a>
+    </p>
+  </footer>
+</div>
+
+<script>
+  // ============================================================
+  // ABIs
+  // ============================================================
+  const FACTORY_ABI = [
+    "function crearCampana(string titulo, string descripcion, uint256 metaRecaudacion, uint256 duracionEnDias)",
+    "function obtenerCampanas() view returns (address[])",
+    "event CampanaCreada(address indexed campana, address indexed creador, string titulo, uint256 metaRecaudacion)"
+  ];
+
+  const CAMPAIGN_ABI = [
+    "function creador() view returns (address)",
+    "function titulo() view returns (string)",
+    "function descripcion() view returns (string)",
+    "function metaRecaudacion() view returns (uint256)",
+    "function fechaLimite() view returns (uint256)",
+    "function totalRecaudado() view returns (uint256)",
+    "function reclamado() view returns (bool)",
+    "function numeroContribuyentes() view returns (uint256)",
+    "function contribuciones(address) view returns (uint256)",
+    "function contribuir() payable",
+    "function reclamar()",
+    "function reembolsar()",
+    "function obtenerEstado() view returns (uint8)",
+    "function obtenerDetallesCampana() view returns (address, string, string, uint256, uint256, uint256, bool, uint256, uint8)",
+    "event Contribuido(address indexed contribuyente, uint256 monto)",
+    "event Reclamado(address indexed creador, uint256 monto)",
+    "event Reembolsado(address indexed contribuyente, uint256 monto)"
+  ];
+
+  const ESTADOS = ["Activa", "Exitosa", "Fallida", "Reclamada"];
+
+  let provider, signer, factory, cuentaActual;
+  let campanasAddrs = [];
+  let selectedCampaign = null; // { address, contract }
+
+  // ============================================================
+  // Wallet
+  // ============================================================
+  async function conectarWallet() {
+    if (!window.ethereum) { log("MetaMask no detectado.", "err"); return; }
+    try {
+      provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+      cuentaActual = await signer.getAddress();
+      document.getElementById("walletAddr").textContent =
+        cuentaActual.slice(0,6) + "..." + cuentaActual.slice(-4);
+      log("Wallet conectada: " + cuentaActual, "ok");
+      if (factory) await cargarCampanas();
+    } catch(e) { log("Error: " + e.message, "err"); }
+  }
+
+  // ============================================================
+  // Factory
+  // ============================================================
+  async function cargarFactory() {
+    if (!provider) { log("Conecta tu wallet primero.", "err"); return; }
+    const addr = document.getElementById("factoryAddr").value.trim();
+    if (!ethers.isAddress(addr)) { log("Dirección inválida.", "err"); return; }
+    try {
+      factory = new ethers.Contract(addr, FACTORY_ABI, provider);
+      // Verificar disponibilidad
+      await factory.obtenerCampanas();
+      log("Factory cargada: " + addr, "ok");
+      await cargarCampanas();
+
+      // Escuchar nuevas campañas
+      factory.on("CampanaCreada", (campana, creador, titulo) => {
+        log("🎉 Nueva campaña creada: \"" + titulo + "\" por " + creador.slice(0,8) + "…", "info");
+        cargarCampanas();
+      });
+    } catch(e) { log("Error al cargar factory: " + (e.reason || e.message), "err"); factory = null; }
+  }
+
+  async function crearCampana() {
+    if (!factory) { log("Carga el factory primero.", "err"); return; }
+    if (!signer)  { log("Conecta tu wallet primero.", "err"); return; }
+
+    const titulo = document.getElementById("newTitulo").value.trim();
+    const desc   = document.getElementById("newDesc").value.trim();
+    const metaEth = document.getElementById("newMeta").value;
+    const dias    = document.getElementById("newDias").value;
+
+    if (!titulo || !desc || !metaEth || !dias) { log("Completa todos los campos.", "err"); return; }
+    if (Number(dias) < 1 || Number(dias) > 365) { log("Duración debe ser entre 1 y 365 días.", "err"); return; }
+
+    try {
+      const factoryW = factory.connect(signer);
+      const metaWei  = ethers.parseEther(metaEth);
+      log("Creando campaña \"" + titulo + "\"…", "info");
+      const tx = await factoryW.crearCampana(titulo, desc, metaWei, BigInt(dias));
+      log("Tx: " + tx.hash.slice(0,12) + "…", "info");
+      await tx.wait();
+      log("✅ Campaña creada exitosamente!", "ok");
+      // Limpiar campos
+      ["newTitulo","newDesc","newMeta","newDias"].forEach(id => document.getElementById(id).value = "");
+      await cargarCampanas();
+    } catch(e) { log("Error: " + (e.reason || e.message), "err"); }
+  }
+
+  // ============================================================
+  // Campañas
+  // ============================================================
+  async function cargarCampanas() {
+    if (!factory) return;
+    const grid = document.getElementById("campaignsGrid");
+    grid.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:1rem;grid-column:1/-1;">Cargando campañas…</p>';
+
+    try {
+      campanasAddrs = await factory.obtenerCampanas();
+      if (campanasAddrs.length === 0) {
+        grid.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:1rem;grid-column:1/-1;">No hay campañas creadas. ¡Sé el primero!</p>';
+        return;
+      }
+      grid.innerHTML = "";
+      for (let i = campanasAddrs.length - 1; i >= 0; i--) {
+        await renderCampaignCard(campanasAddrs[i], grid);
+      }
+    } catch(e) { log("Error cargando campañas: " + e.message, "err"); }
+  }
+
+  async function renderCampaignCard(addr, container) {
+    const c = new ethers.Contract(addr, CAMPAIGN_ABI, provider);
+    try {
+      const d = await c.obtenerDetallesCampana();
+      const [creador, titulo, descripcion, meta, fechaLimite, recaudado, reclamado, numContrib, estado] = d;
+      const pct     = meta > 0n ? Number(recaudado * 100n / meta) : 0;
+      const pctStr  = Math.min(pct, 100) + "%";
+      const ahora   = Date.now() / 1000;
+      const restante = Number(fechaLimite) - ahora;
+      const restanteStr = restante > 0
+        ? (restante > 86400 ? Math.floor(restante/86400) + " días" : Math.floor(restante/3600) + " horas")
+        : "Finalizada";
+      const estadoStr = ESTADOS[Number(estado)] || "Desconocido";
+      const esMeta = pct >= 100;
+
+      const card = document.createElement("div");
+      card.className = "campaign-card";
+      card.innerHTML = `
+        <div class="c-title">${titulo}</div>
+        <div class="c-desc">${descripcion.slice(0,120)}${descripcion.length>120?'…':''}</div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
+          <span class="estado-badge estado-${estadoStr}">${estadoStr}</span>
+          <span style="font-size:.72rem;color:var(--muted);">${numContrib.toString()} contribuyentes</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${esMeta?'':'yellow'}" style="width:${pctStr}"></div>
+        </div>
+        <div class="c-stats">
+          <span>Recaudado: <strong>${ethers.formatEther(recaudado)} ETH</strong></span>
+          <span>Meta: <strong>${ethers.formatEther(meta)} ETH</strong></span>
+          <span>⏱ ${restanteStr}</span>
+        </div>
+        <div class="c-addr">${addr}</div>
+        <button class="sm" onclick="seleccionarCampana('${addr}')">🔍 Interactuar</button>
+      `;
+      container.appendChild(card);
+    } catch(e) {
+      log("Error cargando campaña " + addr.slice(0,8) + "…: " + e.message, "err");
+    }
+  }
+
+  // ============================================================
+  // Campaña seleccionada
+  // ============================================================
+  async function seleccionarCampana(addr) {
+    if (!provider) return;
+    selectedCampaign = {
+      address: addr,
+      contract: new ethers.Contract(addr, CAMPAIGN_ABI, provider)
+    };
+    document.getElementById("selectedPanel").style.display = "block";
+    await actualizarSeleccionada();
+    log("Campaña seleccionada: " + addr.slice(0,8) + "…", "info");
+    document.getElementById("selectedPanel").scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function actualizarSeleccionada() {
+    if (!selectedCampaign) return;
+    const c = selectedCampaign.contract;
+    try {
+      const d = await c.obtenerDetallesCampana();
+      const [creador, titulo, descripcion, meta, fechaLimite, recaudado, reclamado, numContrib, estado] = d;
+      const pct       = meta > 0n ? Number(recaudado * 100n / meta) : 0;
+      const estadoStr = ESTADOS[Number(estado)] || "?";
+      const ahora     = Date.now() / 1000;
+      const restante  = Number(fechaLimite) - ahora;
+      const restanteStr = restante > 0
+        ? (restante > 86400 ? `${Math.floor(restante/86400)} días` : `${Math.floor(restante/3600)} horas`)
+        : "Finalizada";
+
+      document.getElementById("selTitle").textContent = titulo;
+      document.getElementById("selMeta").innerHTML =
+        `<strong>Estado:</strong> ${estadoStr} &nbsp;|&nbsp; ` +
+        `<strong>Recaudado:</strong> ${ethers.formatEther(recaudado)} ETH de ${ethers.formatEther(meta)} ETH (${pct}%) &nbsp;|&nbsp; ` +
+        `<strong>Tiempo:</strong> ${restanteStr} &nbsp;|&nbsp; ` +
+        `<strong>Contribuyentes:</strong> ${numContrib} &nbsp;|&nbsp; ` +
+        `<strong>Creador:</strong> ${creador.slice(0,8)}…`;
+
+      if (cuentaActual) {
+        const miContrib = await c.contribuciones(cuentaActual);
+        document.getElementById("miContrib").textContent =
+          miContrib > 0n
+            ? "Tu contribución: " + ethers.formatEther(miContrib) + " ETH"
+            : "Aún no has contribuido.";
+      }
+    } catch(e) { log("Error actualizando campaña: " + e.message, "err"); }
+  }
+
+  async function contribuir() {
+    if (!selectedCampaign || !signer) { log("Selecciona una campaña y conecta tu wallet.", "err"); return; }
+    const amt = document.getElementById("contribAmt").value;
+    if (!amt || Number(amt) <= 0) { log("Ingresa un monto válido.", "err"); return; }
+    try {
+      const cw = selectedCampaign.contract.connect(signer);
+      const value = ethers.parseEther(amt);
+      log("Contribuyendo " + amt + " ETH…", "info");
+      const tx = await cw.contribuir({ value });
+      await tx.wait();
+      log("✅ Contribución de " + amt + " ETH confirmada!", "ok");
+      await actualizarSeleccionada();
+      await cargarCampanas();
+    } catch(e) { log("Error: " + (e.reason || e.message), "err"); }
+  }
+
+  async function reclamarFondos() {
+    if (!selectedCampaign || !signer) { log("Selecciona una campaña y conecta tu wallet.", "err"); return; }
+    try {
+      const cw = selectedCampaign.contract.connect(signer);
+      log("Reclamando fondos…", "info");
+      const tx = await cw.reclamar();
+      await tx.wait();
+      log("✅ Fondos reclamados por el creador.", "ok");
+      await actualizarSeleccionada();
+      await cargarCampanas();
+    } catch(e) { log("Error: " + (e.reason || e.message), "err"); }
+  }
+
+  async function reembolsar() {
+    if (!selectedCampaign || !signer) { log("Selecciona una campaña y conecta tu wallet.", "err"); return; }
+    try {
+      const cw = selectedCampaign.contract.connect(signer);
+      log("Solicitando reembolso…", "info");
+      const tx = await cw.reembolsar();
+      await tx.wait();
+      log("✅ Reembolso procesado.", "ok");
+      await actualizarSeleccionada();
+      await cargarCampanas();
+    } catch(e) { log("Error: " + (e.reason || e.message), "err"); }
+  }
+
+  // ============================================================
+  // Helpers
+  // ============================================================
+  function log(msg, tipo = "info") {
+    const box = document.getElementById("logBox");
+    const p   = document.createElement("p");
+    p.textContent = new Date().toLocaleTimeString() + " — " + msg;
+    p.className = tipo;
+    box.prepend(p);
+  }
+
+  window.ethereum?.on("accountsChanged", () => location.reload());
+  window.ethereum?.on("chainChanged",    () => location.reload());
+</script>
+</body>
+</html>
