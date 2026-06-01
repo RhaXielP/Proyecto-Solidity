@@ -23,24 +23,9 @@ El crowdfunding descentralizado resuelve problemas reales que las plataformas tr
 2. Crea los archivos `Campaign.sol` y `CrowdfundingFactory.sol` en Remix IDE.
 3. Copia el código de `contracts/Campaign.student.sol` y `contracts/CrowdfundingFactory.student.sol` en el editor.
 
-> 💡 **Nota**: Para simplificar el despliegue en Remix, los steps 4-6 incluyen ambos contratos en un solo archivo. Así no necesitas configurar imports entre archivos.
-
-## Snapshots del Proyecto
-
-| Paso | Archivo | Descripción |
-|---|---|---|
-| Step 1 | `snapshots/step1.sol` | Campaign.sol: enums, constantes, estado, mappings, eventos, constructor |
-| Step 2 | `snapshots/step2.sol` | Campaign.sol: contribuir() y reembolsar() |
-| Step 3 | `snapshots/step3.sol` | Campaign.sol: reclamar(), obtenerEstado() y obtenerDetalles() |
-| Step 4 | `snapshots/step4.sol` | Sistema completo: Campaign + CrowdfundingFactory |
-| Step 5 | `snapshots/step5.sol` | Sistema completo con documentación NatSpec |
-| Step 6 | `snapshots/step6.sol` | Versión final documentada y probada |
-
-> ⚠️ A partir del **Step 4**, el archivo contiene **dos contratos**: `Campaign` y `CrowdfundingFactory`. En Remix, al compilar verás ambos en el dropdown de contratos para desplegar.
-
 ## Pruebas en Remix VM
 
-> ⚠️ Este proyecto requiere **múltiples cuentas** para simular un crowdfunding real. Consulta la sección [Múltiples cuentas para pruebas](../../docs/remix-guide.md#-múltiples-cuentas-para-pruebas) en la guía de Remix.
+> ⚠️ Este proyecto requiere **múltiples cuentas** para simular un crowdfunding real.
 
 ### Flujo de Campaign (solo Campaign.sol)
 
