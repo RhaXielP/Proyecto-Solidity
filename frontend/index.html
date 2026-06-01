@@ -4,7 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CrowdfundingFactory — Panel de Control</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+  <!-- ethers v6 — jsDelivr primary, unpkg fallback -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.umd.min.js"></script>
+  <script>
+    if (typeof ethers === 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/ethers@6.7.1/dist/ethers.umd.min.js';
+      document.head.appendChild(s);
+    }
+  </script>
   <style>
     :root {
       --bg:       #0f1117;
@@ -329,10 +337,22 @@
   let selectedCampaign = null; // { address, contract }
 
   // ============================================================
+  // Guard — ethers must be loaded
+  // ============================================================
+  function checkEthers() {
+    if (typeof ethers === 'undefined') {
+      log("❌ La librería ethers.js no se pudo cargar. Verifica tu conexión a internet y recarga la página.", "err");
+      return false;
+    }
+    return true;
+  }
+
+  // ============================================================
   // Wallet
   // ============================================================
   async function conectarWallet() {
-    if (!window.ethereum) { log("MetaMask no detectado.", "err"); return; }
+    if (!checkEthers()) return;
+    if (!window.ethereum) { log("MetaMask no detectado. Instala la extensión en tu navegador.", "err"); return; }
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
@@ -349,6 +369,7 @@
   // Factory
   // ============================================================
   async function cargarFactory() {
+    if (!checkEthers()) return;
     if (!provider) { log("Conecta tu wallet primero.", "err"); return; }
     const addr = document.getElementById("factoryAddr").value.trim();
     if (!ethers.isAddress(addr)) { log("Dirección inválida.", "err"); return; }
@@ -368,6 +389,7 @@
   }
 
   async function crearCampana() {
+    if (!checkEthers()) return;
     if (!factory) { log("Carga el factory primero.", "err"); return; }
     if (!signer)  { log("Conecta tu wallet primero.", "err"); return; }
 
