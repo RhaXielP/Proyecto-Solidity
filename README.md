@@ -15,7 +15,7 @@ El crowdfunding descentralizado resuelve problemas reales que las plataformas tr
 - **Financiamiento de películas independientes**: Proyectos en blockchain permiten a fans financiar producciones y recibir tokens de participación. Si el proyecto no se financia, recuperan su inversión automáticamente — sin necesidad de confiar en el creador.
 - **Uniswap v3 liquidity positions**: El patrón Factory (un contrato que despliega muchos contratos) es exactamente cómo Uniswap crea un nuevo pool de liquidez para cada par de tokens. Cada Pool es un contrato independiente creado por la UniswapV3Factory.
 
-> 💡 **Takeaway**: El patrón Factory + condiciones de liberación de fondos es uno de los más usados en DeFi. CrowdfundingFactory demuestra exactamente cómo funciona en producción.
+> 💡 **Importante**: El patrón Factory + condiciones de liberación de fondos es uno de los más usados en DeFi. CrowdfundingFactory demuestra exactamente cómo funciona en producción.
 
 ## Configuración
 
